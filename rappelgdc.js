@@ -23,8 +23,27 @@ function loadMapping() {
   }
 }
 
+async function getClanMembers() {
+  console.log('📡 Appel API Clash Royale lancé...');
+  try {
+    const url = `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}`;
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${API_KEY}`
+      }
+    });
+
+    const members = response.data?.memberList || [];
+    return members.map(m => m.name);
+  } catch (error) {
+    console.error('❌ Erreur API Clash Royale:', error.response?.data || error.message);
+    return [];
+  }
+}
+
+
 async function scanAndSaveMapping(guild) {
-  const players = await getIncompletePlayers();
+  const players = await getClanMembers();
   const members = await guild.members.fetch();
 
   // Charger l'ancien mapping
@@ -223,6 +242,17 @@ client.on('messageCreate', async message => {
       message.reply(`✅ Lien ajouté : ${playerName} → ${discordMention}`);
     } catch (err) {
       message.reply('❌ Erreur lors de la mise à jour du mapping.');
+    }
+  }
+
+
+  if (message.content === '!testapi') {
+    try {
+      const url = `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}/warlog`;
+      const response = await axios.get(url, { headers: { Authorization: `Bearer ${API_KEY}` } });
+      message.reply('✅ Endpoint warlog actif.');
+    } catch (err) {
+      message.reply(`❌ Endpoint warlog désactivé : ${err.response?.data?.message || err.message}`);
     }
   }
 
