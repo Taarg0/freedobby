@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "as": "^0.4.1",
+    "axios": "^1.12.2",
+    "discord.js": "^14.23.2",
+    "dotenv": "^17.2.3",
+    "latest": "^0.2.0",
+    "node-cron": "^4.2.1"
+  }
+}
