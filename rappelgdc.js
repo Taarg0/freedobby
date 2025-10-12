@@ -26,6 +26,8 @@ function loadMapping() {
 async function getClanMembers() {
   console.log('📡 Appel API Clash Royale lancé...');
   try {
+    console.log('CLAN_TAG brut:', CLAN_TAG);
+    console.log('URL encodée:', `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}`);
     const url = `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}`;
     const response = await axios.get(url, {
       headers: {
@@ -84,7 +86,6 @@ async function scanAndSaveMapping(guild) {
 async function getIncompletePlayers() {
   console.log('📡 Appel API Clash Royale lancé...');
   try {
-    console.log('CLAN_TAG:', CLAN_TAG);
     const url = `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}/warlog`;
     const response = await axios.get(url, {
       headers: {
