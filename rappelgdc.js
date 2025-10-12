@@ -50,7 +50,6 @@ async function scanAndSaveMapping(guild) {
   const players = await getClanMembers();
   const members = await guild.members.fetch();
 
-  // Charger l'ancien mapping
   const filePath = path.join(__dirname, 'mapping.json');
   let existingMapping = {};
   try {
@@ -63,14 +62,18 @@ async function scanAndSaveMapping(guild) {
   const found = [];
 
   for (const playerName of players) {
-    const match = members.find(member =>
-      member.displayName.toLowerCase().includes(playerName.toLowerCase()) ||
-      member.user.username.toLowerCase().includes(playerName.toLowerCase())
-    );
+    const match = members.find(member => {
+      const discordName = member.displayName.toLowerCase();
+      const username = member.user.username.toLowerCase();
+      const player = playerName.toLowerCase();
+      return discordName.includes(player) || username.includes(player);
+    });
+
+    console.log(`🔍 ${playerName} → ${match ? match.displayName : '❌ Aucun match'}`);
 
     if (match) {
       existingMapping[playerName] = `<@${match.id}>`;
-      found.push(`🔸 ${playerName} → ${match.displayName}`);
+      found.push({ player: playerName, discord: match.displayName });
     }
   }
 
@@ -83,6 +86,7 @@ async function scanAndSaveMapping(guild) {
     return null;
   }
 }
+
 
 
 async function getIncompletePlayers() {
@@ -184,17 +188,21 @@ client.on('messageCreate', async message => {
   }
 
   if (message.content === '!scanmapping') {
-    const results = await scanAndSaveMapping(message.guild);
-    if (results) {
-      loadMapping();
-      const preview = results.length > 0
-        ? results.join('\n')
-        : '⚠️ Aucun lien trouvé entre les noms Clash Royale et les pseudos Discord.';
-      message.reply(`🔍 Mapping mis à jour automatiquement.\n\n${preview}`);
+  const results = await scanAndSaveMapping(message.guild);
+  if (results) {
+    loadMapping();
+    if (results.length > 0) {
+      const table = results.map(r => `| ${r.player.padEnd(20)} | ${r.discord.padEnd(20)} |`).join('\n');
+      const header = `| Nom Clash Royale       | Pseudo Discord         |\n|------------------------|------------------------|`;
+      message.reply(`🔍 Mapping mis à jour automatiquement.\n\n\`\`\`\n${header}\n${table}\n\`\`\``);
     } else {
-      message.reply('❌ Échec lors de la mise à jour du mapping.');
+      message.reply('⚠️ Aucun lien trouvé entre les noms Clash Royale et les pseudos Discord.');
     }
+  } else {
+    message.reply('❌ Échec lors de la mise à jour du mapping.');
   }
+}
+
 
   if (message.content === '!check') {
     getIncompletePlayers().then(players => {
