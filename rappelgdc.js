@@ -65,19 +65,24 @@ async function scanAndSaveMapping(guild) {
 async function getIncompletePlayers() {
   console.log('📡 Appel API Clash Royale lancé...');
   try {
-    const response = await axios.get(`https://api.royaleapi.com/clan/${CLAN_TAG}/warlog`, {
-      headers: { Authorization: `Bearer ${API_KEY}` }
+    const url = `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}/warlog`;
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${API_KEY}`
+      }
     });
 
-    const warData = response.data?.[0];
+    const warData = response.data?.items?.[0];
     if (!warData || !warData.participants) return [];
-    const incomplete = warData.participants.filter(p => p.battlesPlayed < p.battlesRequired);
+
+    const incomplete = warData.participants.filter(p => p.battlesPlayed < p.numberOfBattles);
     return incomplete.map(p => p.name);
   } catch (error) {
     console.error('❌ Erreur API Clash Royale:', error.response?.data || error.message);
     return [];
   }
 }
+
 
 const client = new Client({
   intents: [
