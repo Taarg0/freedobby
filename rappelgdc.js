@@ -1,5 +1,4 @@
 require('dotenv').config();
-require('dotenv').config();
 console.log('🔍 CLAN_TAG chargé depuis .env :', process.env.CLAN_TAG);
 
 const axios = require('axios');
