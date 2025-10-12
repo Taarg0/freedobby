@@ -1,11 +1,10 @@
-require('dotenv').config()
+require('dotenv').config();
 const axios = require('axios');
-const Discord = require('discord.js');
 const { Client, GatewayIntentBits } = require('discord.js');
 const cron = require('node-cron');
 
 const API_KEY = process.env.CLASH_API_KEY;
-const CLAN_TAG = process.env.CLAN_TAG
+const CLAN_TAG = process.env.CLAN_TAG;
 const token = process.env.DISCORD_TOKEN;
 
 async function getIncompletePlayers() {
@@ -17,7 +16,6 @@ async function getIncompletePlayers() {
     const warData = response.data?.[0];
     if (!warData || !warData.participants) return [];
     const incomplete = warData.participants.filter(p => p.battlesPlayed < p.battlesRequired);
-
     return incomplete.map(p => p.name);
   } catch (error) {
     console.error('Erreur API Clash Royale:', error.message);
@@ -38,33 +36,29 @@ let reminderTime = '15:06'; // Heure par défaut
 const channelId = '1281916311252893750'; // Remplace par l’ID du salon Discord
 
 function scheduleReminder(time) {
-  if (scheduledTask) scheduledTask.stop(); // Stopper l’ancienne tâche
+  if (scheduledTask) scheduledTask.stop();
 
   const [hour, minute] = time.split(':');
-  console.log('🕒 Heure reçue pour le rappel :', time);
-const cronExpression = `${minute} ${hour} * * *`;
+  const cronExpression = `${minute} ${hour} * * *`;
+  console.log(`🕒 Rappel programmé à ${time} (${cronExpression})`);
 
-
-  scheduledTask = cron.schedule(cronExpression, () => {
-    console.log(`📤 Envoi du rappel à ${time}`);
+  scheduledTask = cron.schedule(cronExpression, async () => {
+    console.log(`📤 Envoi du rappel automatique à ${time}`);
     const channel = client.channels.cache.get(channelId);
-    if (channel) {
-      getIncompletePlayers().then(players => {
-        const message = players.length > 0
-          ? `📣 Rappel automatique à ${time} — les joueurs suivants doivent encore attaquer :\n🔸 ${players.join('\n🔸 ')}`
-          : `✅ Tous les joueurs ont terminé leurs attaques. GG !`;
+    if (!channel) return console.error('❌ Salon introuvable');
 
-        channel.send(message);
-      });
-    }
+    const players = await getIncompletePlayers();
+    const message = players.length > 0
+      ? `📣 Rappel automatique à ${time} — les joueurs suivants doivent encore attaquer :\n🔸 ${players.join('\n🔸 ')}`
+      : `✅ Tous les joueurs ont terminé leurs attaques. GG !`;
+
+    channel.send(message);
   });
-
-  console.log(`✅ Tâche cron créée pour ${cronExpression}`);
 }
 
-client.on('clientReady', () => {
+client.once('ready', () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
-  scheduleReminder(reminderTime); // Démarre avec l’heure par défaut
+  scheduleReminder(reminderTime);
 });
 
 client.on('messageCreate', message => {
@@ -94,6 +88,5 @@ client.on('messageCreate', message => {
   }
 });
 
-console.log('🔐 Token lu :', process.env.DISCORD_TOKEN ? '✅ présent' : '❌ absent');
-
+console.log('🔐 Token lu :', token ? '✅ présent' : '❌ absent');
 client.login(token);
