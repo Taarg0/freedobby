@@ -84,6 +84,7 @@ async function scanAndSaveMapping(guild) {
 async function getIncompletePlayers() {
   console.log('📡 Appel API Clash Royale lancé...');
   try {
+    console.log('CLAN_TAG:', CLAN_TAG);
     const url = `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}/warlog`;
     const response = await axios.get(url, {
       headers: {
@@ -153,6 +154,10 @@ function scheduleReminder(time) {
 
 client.once('clientReady', () => {
   reminderTime = '10:00'; // Réinitialisation explicite
+  getClanMembers().then(names => {
+    console.log('👥 Membres du clan :', names);
+  });
+
   loadMapping(); // Chargement du mapping
   const now = new Date().toLocaleString('fr-FR');
   console.log(`✅ Connecté(e) en tant que ${client.user.tag} — ${now}`);
