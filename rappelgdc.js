@@ -212,7 +212,10 @@ client.on('messageCreate', async message => {
       }
 
       if (notFound.length > 0) {
-        reply += `⚠️ Joueurs non trouvés sur Discord :\n🔸 ${notFound.join('\n🔸 ')}`;
+        reply += `⚠️ Joueurs non trouvés sur Discord :\n🔸 ${notFound.join('\n🔸 ')}\n\n`;
+
+        const suggestions = notFound.map(name => `// !link ${name} @DiscordUser`).join('\n');
+        reply += `💡 Suggestions pour les lier manuellement :\n\`\`\`\n${suggestions}\n\`\`\``;
       }
 
       message.reply(reply);
