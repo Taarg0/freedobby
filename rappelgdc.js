@@ -159,7 +159,7 @@ function scheduleReminder(time) {
   });
 }
 
-client.once('clientReady', () => {
+client.once('ready', () => {
   reminderTime = '10:00'; // Réinitialisation explicite
   getClanMembers().then(names => {
     console.log('👥 Membres du clan :', names);
