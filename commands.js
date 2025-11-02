@@ -102,6 +102,11 @@ async function handleRappel(message) {
 
   const mapping = loadMapping();
   const warStatus = await getWarStatus();
+
+  if (!warStatus || warStatus.length === 0) {
+    return message.reply('⚠️ Impossible de récupérer les données de guerre. L’API Clash Royale semble indisponible pour le moment.');
+  }
+
   const incomplete = warStatus.filter(p => p.status === '❌');
 
   if (incomplete.length === 0) {
@@ -129,8 +134,8 @@ async function handleCheck(message) {
   const mapping = loadMapping();
   const warStatus = await getWarStatus();
 
-  if (warStatus.length === 0) {
-    return message.reply('⚠️ Aucun participant trouvé dans le warlog.');
+  if (!warStatus || warStatus.length === 0) {
+    return message.reply('⚠️ Impossible de récupérer les données de guerre. L’API Clash Royale semble indisponible pour le moment.');
   }
 
   const table = warStatus.map(p => {
