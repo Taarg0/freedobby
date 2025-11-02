@@ -254,14 +254,26 @@ client.on('messageCreate', async message => {
   }
 
   if (message.content.startsWith('!link ')) {
-    const args = message.content.split(' ');
-    if (args.length !== 3 || !args[2].startsWith('<@') || !args[2].endsWith('>')) {
-      message.reply('❌ Format invalide. Utilise `!link NomClashRoyale @DiscordUser`');
+    const raw = message.content.slice(6).trim(); // retire "!link "
+    const lastComma = raw.lastIndexOf(',');
+    if (lastComma === -1) {
+      message.reply('❌ Format invalide. Utilise `!link Nom1,Nom2,@DiscordUser`');
       return;
     }
 
-    const playerName = args[1];
-    const discordMention = args[2];
+    const namesPart = raw.slice(0, lastComma);
+    const mentionPart = raw.slice(lastComma + 1).trim();
+
+    if (!mentionPart.startsWith('<@') || !mentionPart.endsWith('>')) {
+      message.reply('❌ Format invalide. Le dernier élément doit être une mention Discord (`@DiscordUser`)');
+      return;
+    }
+
+    const playerNames = namesPart.split(',').map(n => n.trim()).filter(n => n.length > 0);
+    if (playerNames.length === 0) {
+      message.reply('❌ Aucun nom de joueur fourni.');
+      return;
+    }
 
     const filePath = path.join(__dirname, 'mapping.json');
     let mapping = {};
@@ -272,9 +284,34 @@ client.on('messageCreate', async message => {
       console.warn('⚠️ Aucun mapping existant, un nouveau sera créé.');
     }
 
-    mapping[playerName] = discordMention;
+    for (const name of playerNames) {
+      mapping[name] = mentionPart;
+    }
 
     try {
+      fs.writeFileSync(filePath, JSON.stringify(mapping, null, 2));
+      loadMapping();
+      message.reply(`✅ Liens ajoutés : ${playerNames.join(', ')} → ${mentionPart}`);
+    } catch (err) {
+      message.reply('❌ Erreur lors de la mise à jour du mapping.');
+    }
+  }
+
+  const playerName = args[1];
+  const discordMention = args[2];
+
+  const filePath = path.join(__dirname, 'mapping.json');
+  let mapping = {};
+  try {
+      const raw = fs.readFileSync(filePath);
+      mapping = JSON.parse(raw);
+    } catch (err) {
+      console.warn('⚠️ Aucun mapping existant, un nouveau sera créé.');
+    }
+
+  mapping[playerName] = discordMention;
+
+  try {
       fs.writeFileSync(filePath, JSON.stringify(mapping, null, 2));
       loadMapping(); // recharge en mémoire
       message.reply(`✅ Lien ajouté : ${playerName} → ${discordMention}`);
