@@ -151,9 +151,12 @@ function scheduleReminder(time) {
 
     const players = await getIncompletePlayers();
     const mentions = players.map(name => playerToDiscord[name] || name);
-    const message = mentions.length > 0
-      ? `📣 Rappel automatique — les joueurs suivants doivent encore attaquer :\n🔸 ${mentions.join('\n🔸 ')}`
-       // `✅ Tous les joueurs ont terminé leurs attaques. GG !`;
+    if (mentions.length > 0) {
+      const message = `📣 Rappel automatique — les joueurs suivants doivent encore attaquer :\n🔸 ${mentions.join('\n🔸 ')}`;
+      channel.send(message);
+    } else {
+     console.log('✅ Tous les joueurs ont terminé leurs attaques. Aucun message envoyé.');
+    }
 
     channel.send(message);
   });
