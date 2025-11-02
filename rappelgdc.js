@@ -19,52 +19,8 @@ if (!API_KEY || !CLAN_TAG || !token) {
 let playerToDiscord = {};
 
 
-async function getClanMembers() {
-  console.log('📡 Appel API Clash Royale lancé...');
-  try {
-    console.log('CLAN_TAG brut:', CLAN_TAG);
-    console.log('URL encodée:', `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}`);
-    const url = `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}`;
-    const response = await axios.get(url, {
-      headers: {
-        Authorization: `Bearer ${API_KEY}`
-      }
-    });
-
-    const members = response.data?.memberList || [];
-    return members.map(m => m.name);
-  } catch (error) {
-    console.error('❌ Erreur API Clash Royale:', error.response?.data || error.message);
-    return [];
-  }
-}
-
-
 const { scanAndSaveMapping, loadMapping } = require('./mapping');
-
-
-
-async function getIncompletePlayers() {
-  console.log('📡 Appel API Clash Royale lancé...');
-  try {
-    const url = `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}/warlog`;
-    const response = await axios.get(url, {
-      headers: {
-        Authorization: `Bearer ${API_KEY}`
-      }
-    });
-
-    const warData = response.data?.items?.[0];
-    if (!warData || !warData.participants) return [];
-
-    const incomplete = warData.participants.filter(p => p.battlesPlayed < p.numberOfBattles);
-    return incomplete.map(p => p.name);
-  } catch (error) {
-    console.error('❌ Erreur API Clash Royale:', error.response?.data || error.message);
-    return [];
-  }
-}
-
+const { getClanMembers, getIncompletePlayers } = require('./clash');
 
 const client = new Client({
   intents: [
@@ -122,7 +78,7 @@ client.once('ready', () => {
     console.log('👥 Membres du clan :', names);
   });
 
-  loadMapping();
+  playerToDiscord = loadMapping();
   const now = new Date().toLocaleString('fr-FR');
   console.log(`✅ Connecté(e) en tant que ${client.user.tag} — ${now}`);
   scheduleReminder(reminderTime);

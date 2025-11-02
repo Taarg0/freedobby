@@ -1,8 +1,7 @@
 const { scanAndSaveMapping, loadMapping } = require('./mapping');
-const { getClanMembers } = require('./clash');
-const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const { getIncompletePlayers } = require('./clash');
 
 function handleCommands(message) {
   const content = message.content.trim();
@@ -32,7 +31,7 @@ async function handleScanMapping(message) {
   const results = await scanAndSaveMapping(message.guild);
   if (!results) return message.reply('❌ Échec lors de la mise à jour du mapping.');
 
-  loadMapping();
+  const mapping = loadMapping(); 
   const { found, notFound } = results;
 
   if (found.length > 0) {
@@ -89,13 +88,59 @@ function handleLink(message) {
   }
 }
 
-// Placeholder pour !rappel et !check
-function handleRappel(message) {
-  message.reply('📣 Rappel envoyé (fonction à compléter).');
+const { getWarStatus } = require('./clash');
+
+async function handleRappel(message) {
+  const today = new Date();
+  const day = today.getDay();
+  const allowedDays = [0, 1, 5, 6]; // dimanche, lundi, vendredi, samedi
+
+  if (!allowedDays.includes(day)) {
+    console.log(`⏳ Rappel ignoré — jour non autorisé (${day})`);
+    return;
+  }
+
+  const mapping = loadMapping();
+  const warStatus = await getWarStatus();
+  const incomplete = warStatus.filter(p => p.status === '❌');
+
+  if (incomplete.length === 0) {
+    return message.reply('✅ Tous les joueurs ont terminé leurs attaques.');
+  }
+
+  const mentions = incomplete.map(p => {
+    const mention = mapping[p.name] || p.name;
+    return `${mention} (${p.battlesPlayed}/${p.numberOfBattles})`;
+  });
+
+  const msg = `📣 Rappel manuel — les joueurs suivants doivent encore attaquer :\n🔸 ${mentions.join('\n🔸 ')}`;
+  message.reply(msg);
 }
 
-function handleCheck(message) {
-  message.reply('📊 État de guerre affiché (fonction à compléter).');
+async function handleCheck(message) {
+  const today = new Date();
+  const day = today.getDay();
+  const allowedDays = [0, 1, 5, 6]; // dimanche, lundi, vendredi, samedi
+
+  if (!allowedDays.includes(day)) {
+    return message.reply(`⏳ Pas de guerre aujourd’hui (jour ${day}) — vérification désactivée.`);
+  }
+
+  const mapping = loadMapping();
+  const warStatus = await getWarStatus();
+
+  if (warStatus.length === 0) {
+    return message.reply('⚠️ Aucun participant trouvé dans le warlog.');
+  }
+
+  const table = warStatus.map(p => {
+    const discord = mapping[p.name] || p.name;
+    return `| ${p.name.padEnd(20)} | ${discord.padEnd(20)} | ${String(p.battlesPlayed).padEnd(2)}/${p.numberOfBattles} | ${p.status} |`;
+  }).join('\n');
+
+  const header = `| Nom Clash Royale       | Pseudo Discord         | Attaques | Statut |\n|------------------------|------------------------|----------|--------|`;
+  const chunk = `📊 État de guerre actuel :\n\`\`\`\n${header}\n${table}\n\`\`\``;
+  message.reply(chunk);
 }
 
 module.exports = {
