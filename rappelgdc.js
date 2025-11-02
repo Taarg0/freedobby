@@ -53,7 +53,8 @@ async function getClanMembers() {
 
 async function scanAndSaveMapping(guild) {
   const players = await getClanMembers();
-  const members = await guild.members.fetch();
+const members = await guild.members.fetch();
+console.log('📥 Membres Discord récupérés :', members.map(m => m.displayName));
 
   const filePath = path.join(__dirname, 'mapping.json');
   let existingMapping = {};
