@@ -11,6 +11,11 @@ const API_KEY = process.env.CLASH_API_KEY;
 const CLAN_TAG = process.env.CLAN_TAG;
 const token = process.env.DISCORD_TOKEN;
 
+if (!API_KEY || !CLAN_TAG || !token) {
+  console.error('❌ Variables d’environnement manquantes. Vérifie ton fichier .env');
+  process.exit(1);
+}
+
 let playerToDiscord = {};
 
 function loadMapping() {
@@ -132,7 +137,7 @@ function scheduleReminder(time) {
 
   scheduledTask = cron.schedule(cronExpression, async () => {
     const today = new Date();
-    const day = today.getDay(); // 0 = dimanche, 1 = lundi, ..., 6 = samedi
+    const day = today.getDay();
     const allowedDays = {
       0: 'dimanche',
       1: 'lundi',
@@ -155,20 +160,18 @@ function scheduleReminder(time) {
       const message = `📣 Rappel automatique — les joueurs suivants doivent encore attaquer :\n🔸 ${mentions.join('\n🔸 ')}`;
       channel.send(message);
     } else {
-     console.log('✅ Tous les joueurs ont terminé leurs attaques. Aucun message envoyé.');
+      console.log('✅ Tous les joueurs ont terminé leurs attaques. Aucun message envoyé.');
     }
-
-    channel.send(message);
   });
 }
 
 client.once('ready', () => {
-  reminderTime = '10:00'; // Réinitialisation explicite
+  reminderTime = '10:00';
   getClanMembers().then(names => {
     console.log('👥 Membres du clan :', names);
   });
 
-  loadMapping(); // Chargement du mapping
+  loadMapping();
   const now = new Date().toLocaleString('fr-FR');
   console.log(`✅ Connecté(e) en tant que ${client.user.tag} — ${now}`);
   scheduleReminder(reminderTime);
