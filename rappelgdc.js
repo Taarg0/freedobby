@@ -1,6 +1,6 @@
 require('dotenv').config();
 console.log('🔍 CLAN_TAG chargé depuis .env :', process.env.CLAN_TAG);
-
+const { handleCommands } = require('./commands');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
@@ -51,49 +51,7 @@ async function getClanMembers() {
 }
 
 
-async function scanAndSaveMapping(guild) {
-  const players = await getClanMembers();
-  const members = await guild.members.fetch();
-
-  const filePath = path.join(__dirname, 'mapping.json');
-  let existingMapping = {};
-  try {
-    const raw = fs.readFileSync(filePath);
-    existingMapping = JSON.parse(raw);
-  } catch (err) {
-    console.warn('⚠️ Aucun mapping existant trouvé, un nouveau sera créé.');
-  }
-
-  const found = [];
-  const notFound = [];
-
-  for (const playerName of players) {
-    const match = members.find(member => {
-      const discordName = member.displayName.toLowerCase();
-      const username = member.user.username.toLowerCase();
-      const player = playerName.toLowerCase();
-      return discordName.includes(player) || username.includes(player);
-    });
-
-    console.log(`🔍 ${playerName} → ${match ? match.displayName : '❌ Aucun match'}`);
-
-    if (match) {
-      existingMapping[playerName] = `<@${match.id}>`;
-      found.push({ player: playerName, discord: match.displayName });
-    } else {
-      notFound.push(playerName);
-    }
-  }
-
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(existingMapping, null, 2));
-    console.log('✅ mapping.json mis à jour (fusionné)');
-    return { found, notFound };
-  } catch (err) {
-    console.error('❌ Erreur écriture mapping.json:', err.message);
-    return null;
-  }
-}
+const { scanAndSaveMapping, loadMapping } = require('./mapping');
 
 
 
@@ -182,155 +140,8 @@ client.once('ready', () => {
 });
 
 client.on('messageCreate', async message => {
-  if (message.content.startsWith('!rappel')) {
-    const args = message.content.split(' ');
-    const isValidTime = /^\d{2}:\d{2}$/.test(args[1]) &&
-                        Number(args[1].split(':')[0]) < 24 &&
-                        Number(args[1].split(':')[1]) < 60;
-
-    if (args.length === 2 && isValidTime) {
-      reminderTime = args[1];
-      scheduleReminder(reminderTime);
-      message.reply(`⏰ Rappel mis à jour pour ${reminderTime} chaque jour.`);
-    } else {
-      message.reply('❌ Format invalide. Utilise `!rappel HH:MM` (ex: `!rappel 19:30`)');
-    }
-  }
-
-  if (message.content === '!scanmapping') {
-    const results = await scanAndSaveMapping(message.guild);
-    if (results) {
-      loadMapping();
-      const { found, notFound } = results;
-
-      // 1️⃣ Message 1 : tableau des joueurs trouvés
-      if (found.length > 0) {
-        const table = found.map(r => `| ${r.player.padEnd(20)} | ${r.discord.padEnd(20)} |`).join('\n');
-        const header = `| Nom Clash Royale       | Pseudo Discord         |\n|------------------------|------------------------|`;
-        const chunk = `🔍 Mapping mis à jour automatiquement.\n\n\`\`\`\n${header}\n${table}\n\`\`\``;
-        message.reply(chunk);
-      } else {
-        message.reply('⚠️ Aucun lien trouvé entre les noms Clash Royale et les pseudos Discord.');
-      }
-
-      // 2️⃣ Message 2 : joueurs non trouvés + suggestions
-      if (notFound.length > 0) {
-        const list = notFound.map(name => `🔸 ${name}`).join('\n');
-        const suggestions = notFound.map(name => `// !link ${name} @DiscordUser`).join('\n');
-        const chunk = `⚠️ Joueurs non trouvés sur Discord :\n${list}\n\n💡 Suggestions pour les lier manuellement :\n\`\`\`\n${suggestions}\n\`\`\``;
-        message.reply(chunk);
-      }
-    } else {
-      message.reply('❌ Échec lors de la mise à jour du mapping.');
-    }
-  }
-
-
-  if (message.content === '!check') {
-    getIncompletePlayers().then(players => {
-      if (players.length > 0) {
-        const mentions = players.map(name => playerToDiscord[name] || name);
-        message.reply(`🔍 Joueurs en retard :\n🔸 ${mentions.join('\n🔸 ')}`);
-      } else {
-        message.reply('✅ Tous les joueurs ont attaqué. Rien à signaler.');
-      }
-    });
-  }
-
-  if (message.content.startsWith('!mapping ')) {
-    const args = message.content.split(' ');
-    const playerName = args[1];
-    if (!playerName) {
-      message.reply('❌ Utilise `!mapping NomClashRoyale`');
-      return;
-    }
-
-    const mention = playerToDiscord[playerName];
-    if (mention) {
-      message.reply(`🔗 ${playerName} est lié à ${mention}`);
-    } else {
-      message.reply(`❌ Aucun lien trouvé pour **${playerName}** dans le mapping.`);
-    }
-  }
-
-  if (message.content.startsWith('!link ')) {
-    const raw = message.content.slice(6).trim(); // retire "!link "
-    const lastComma = raw.lastIndexOf(',');
-    if (lastComma === -1) {
-      message.reply('❌ Format invalide. Utilise `!link Nom1,Nom2,@DiscordUser`');
-      return;
-    }
-
-    const namesPart = raw.slice(0, lastComma);
-    const mentionPart = raw.slice(lastComma + 1).trim();
-
-    if (!mentionPart.startsWith('<@') || !mentionPart.endsWith('>')) {
-      message.reply('❌ Format invalide. Le dernier élément doit être une mention Discord (`@DiscordUser`)');
-      return;
-    }
-
-    const playerNames = namesPart.split(',').map(n => n.trim()).filter(n => n.length > 0);
-    if (playerNames.length === 0) {
-      message.reply('❌ Aucun nom de joueur fourni.');
-      return;
-    }
-
-    const filePath = path.join(__dirname, 'mapping.json');
-    let mapping = {};
-    try {
-      const raw = fs.readFileSync(filePath);
-      mapping = JSON.parse(raw);
-    } catch (err) {
-      console.warn('⚠️ Aucun mapping existant, un nouveau sera créé.');
-    }
-
-    for (const name of playerNames) {
-      mapping[name] = mentionPart;
-    }
-
-    try {
-      fs.writeFileSync(filePath, JSON.stringify(mapping, null, 2));
-      loadMapping();
-      message.reply(`✅ Liens ajoutés : ${playerNames.join(', ')} → ${mentionPart}`);
-    } catch (err) {
-      message.reply('❌ Erreur lors de la mise à jour du mapping.');
-    }
-  }
-
-  const playerName = args[1];
-  const discordMention = args[2];
-
-  const filePath = path.join(__dirname, 'mapping.json');
-  let mapping = {};
-  try {
-      const raw = fs.readFileSync(filePath);
-      mapping = JSON.parse(raw);
-    } catch (err) {
-      console.warn('⚠️ Aucun mapping existant, un nouveau sera créé.');
-    }
-
-  mapping[playerName] = discordMention;
-
-  try {
-      fs.writeFileSync(filePath, JSON.stringify(mapping, null, 2));
-      loadMapping(); // recharge en mémoire
-      message.reply(`✅ Lien ajouté : ${playerName} → ${discordMention}`);
-    } catch (err) {
-      message.reply('❌ Erreur lors de la mise à jour du mapping.');
-    }
-  }
-
-
-  if (message.content === '!testapi') {
-    try {
-      const url = `https://api.clashroyale.com/v1/clans/${encodeURIComponent(CLAN_TAG)}/warlog`;
-      const response = await axios.get(url, { headers: { Authorization: `Bearer ${API_KEY}` } });
-      message.reply('✅ Endpoint warlog actif.');
-    } catch (err) {
-      message.reply(`❌ Endpoint warlog désactivé : ${err.response?.data?.message || err.message}`);
-    }
-  }
-
+  if (message.author.bot) return;
+  handleCommands(message);
 });
 
 console.log('🔐 Token lu :', token ? '✅ présent' : '❌ absent');
