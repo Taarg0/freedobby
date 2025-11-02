@@ -199,19 +199,27 @@ client.on('messageCreate', async message => {
 
   if (message.content === '!scanmapping') {
   const results = await scanAndSaveMapping(message.guild);
-  if (results) {
-    loadMapping();
-    if (results.length > 0) {
-      const table = results.map(r => `| ${r.player.padEnd(20)} | ${r.discord.padEnd(20)} |`).join('\n');
-      const header = `| Nom Clash Royale       | Pseudo Discord         |\n|------------------------|------------------------|`;
-      message.reply(`🔍 Mapping mis à jour automatiquement.\n\n\`\`\`\n${header}\n${table}\n\`\`\``);
+    if (results) {
+      loadMapping();
+      const { found, notFound } = results;
+
+      let reply = '🔍 Mapping mis à jour automatiquement.\n\n';
+
+      if (found.length > 0) {
+        const table = found.map(r => `| ${r.player.padEnd(20)} | ${r.discord.padEnd(20)} |`).join('\n');
+        const header = `| Nom Clash Royale       | Pseudo Discord         |\n|------------------------|------------------------|`;
+        reply += `\`\`\`\n${header}\n${table}\n\`\`\`\n`;
+      }
+
+      if (notFound.length > 0) {
+        reply += `⚠️ Joueurs non trouvés sur Discord :\n🔸 ${notFound.join('\n🔸 ')}`;
+      }
+
+      message.reply(reply);
     } else {
-      message.reply('⚠️ Aucun lien trouvé entre les noms Clash Royale et les pseudos Discord.');
+      message.reply('❌ Échec lors de la mise à jour du mapping.');
     }
-  } else {
-    message.reply('❌ Échec lors de la mise à jour du mapping.');
   }
-}
 
 
   if (message.content === '!check') {
