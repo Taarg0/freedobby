@@ -54,8 +54,7 @@ async function getClanMembers() {
 async function scanAndSaveMapping(guild) {
   const players = await getClanMembers();
   const members = await guild.members.fetch();
-  console.log('📥 Membres Discord récupérés :', members.map(m => m.displayName));
-  
+
   const filePath = path.join(__dirname, 'mapping.json');
   let existingMapping = {};
   try {
@@ -66,6 +65,7 @@ async function scanAndSaveMapping(guild) {
   }
 
   const found = [];
+  const notFound = [];
 
   for (const playerName of players) {
     const match = members.find(member => {
@@ -80,14 +80,15 @@ async function scanAndSaveMapping(guild) {
     if (match) {
       existingMapping[playerName] = `<@${match.id}>`;
       found.push({ player: playerName, discord: match.displayName });
+    } else {
+      notFound.push(playerName);
     }
   }
 
   try {
     fs.writeFileSync(filePath, JSON.stringify(existingMapping, null, 2));
     console.log('✅ mapping.json mis à jour (fusionné)');
-    console.log('🔗 Liens trouvés :', found);
-    return found;
+    return { found, notFound };
   } catch (err) {
     console.error('❌ Erreur écriture mapping.json:', err.message);
     return null;
