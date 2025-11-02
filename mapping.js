@@ -50,6 +50,7 @@ function loadMapping() {
   const filePath = path.join(__dirname, 'mapping.json');
   try {
     const raw = fs.readFileSync(filePath);
+    console.log('🔄 Mapping chargé depuis mapping.json');
     return JSON.parse(raw);
   } catch (err) {
     console.warn('⚠️ mapping.json introuvable ou invalide.');

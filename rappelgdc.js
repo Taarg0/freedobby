@@ -18,17 +18,6 @@ if (!API_KEY || !CLAN_TAG || !token) {
 
 let playerToDiscord = {};
 
-function loadMapping() {
-  const filePath = path.join(__dirname, 'mapping.json');
-  try {
-    const raw = fs.readFileSync(filePath);
-    playerToDiscord = JSON.parse(raw);
-    console.log('🔄 Mapping chargé depuis mapping.json');
-  } catch (err) {
-    console.error('❌ Erreur chargement mapping.json:', err.message);
-    playerToDiscord = {};
-  }
-}
 
 async function getClanMembers() {
   console.log('📡 Appel API Clash Royale lancé...');
