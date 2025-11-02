@@ -153,7 +153,7 @@ function scheduleReminder(time) {
     const mentions = players.map(name => playerToDiscord[name] || name);
     const message = mentions.length > 0
       ? `📣 Rappel automatique — les joueurs suivants doivent encore attaquer :\n🔸 ${mentions.join('\n🔸 ')}`
-      : `✅ Tous les joueurs ont terminé leurs attaques. GG !`;
+       // `✅ Tous les joueurs ont terminé leurs attaques. GG !`;
 
     channel.send(message);
   });
