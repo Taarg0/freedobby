@@ -53,9 +53,9 @@ async function getClanMembers() {
 
 async function scanAndSaveMapping(guild) {
   const players = await getClanMembers();
-const members = await guild.members.fetch();
-console.log('📥 Membres Discord récupérés :', members.map(m => m.displayName));
-
+  const members = await guild.members.fetch();
+  console.log('📥 Membres Discord récupérés :', members.map(m => m.displayName));
+  
   const filePath = path.join(__dirname, 'mapping.json');
   let existingMapping = {};
   try {
@@ -86,6 +86,7 @@ console.log('📥 Membres Discord récupérés :', members.map(m => m.displayNam
   try {
     fs.writeFileSync(filePath, JSON.stringify(existingMapping, null, 2));
     console.log('✅ mapping.json mis à jour (fusionné)');
+    console.log('🔗 Liens trouvés :', found);
     return found;
   } catch (err) {
     console.error('❌ Erreur écriture mapping.json:', err.message);
@@ -121,7 +122,8 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers
   ]
 });
 
