@@ -198,27 +198,28 @@ client.on('messageCreate', async message => {
   }
 
   if (message.content === '!scanmapping') {
-  const results = await scanAndSaveMapping(message.guild);
+    const results = await scanAndSaveMapping(message.guild);
     if (results) {
       loadMapping();
       const { found, notFound } = results;
 
-      let reply = '🔍 Mapping mis à jour automatiquement.\n\n';
-
+      // 1️⃣ Message 1 : tableau des joueurs trouvés
       if (found.length > 0) {
         const table = found.map(r => `| ${r.player.padEnd(20)} | ${r.discord.padEnd(20)} |`).join('\n');
         const header = `| Nom Clash Royale       | Pseudo Discord         |\n|------------------------|------------------------|`;
-        reply += `\`\`\`\n${header}\n${table}\n\`\`\`\n`;
+        const chunk = `🔍 Mapping mis à jour automatiquement.\n\n\`\`\`\n${header}\n${table}\n\`\`\``;
+        message.reply(chunk);
+      } else {
+        message.reply('⚠️ Aucun lien trouvé entre les noms Clash Royale et les pseudos Discord.');
       }
 
+      // 2️⃣ Message 2 : joueurs non trouvés + suggestions
       if (notFound.length > 0) {
-        reply += `⚠️ Joueurs non trouvés sur Discord :\n🔸 ${notFound.join('\n🔸 ')}\n\n`;
-
+        const list = notFound.map(name => `🔸 ${name}`).join('\n');
         const suggestions = notFound.map(name => `// !link ${name} @DiscordUser`).join('\n');
-        reply += `💡 Suggestions pour les lier manuellement :\n\`\`\`\n${suggestions}\n\`\`\``;
+        const chunk = `⚠️ Joueurs non trouvés sur Discord :\n${list}\n\n💡 Suggestions pour les lier manuellement :\n\`\`\`\n${suggestions}\n\`\`\``;
+        message.reply(chunk);
       }
-
-      message.reply(reply);
     } else {
       message.reply('❌ Échec lors de la mise à jour du mapping.');
     }
